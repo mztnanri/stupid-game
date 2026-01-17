@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>愚蠢的錨人小遊戲</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(to bottom, #f0f8ff, #e6e6fa); 
+            font-family: 'Arial', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            height: 100vh; 
+            justify-content: center; 
+        }
+        canvas { 
+            border: 2px solid #ddd; 
+            border-radius: 10px; 
+            background: white; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+        }
+        #count { 
+            font-size: 28px; 
+            font-weight: bold; 
+            color: #333; 
+            margin: 10px 0; 
+        }
+        #button { 
+            padding: 15px 40px; 
+            font-size: 20px; 
+            background: linear-gradient(45deg, #ff69b4, #ba55d3); 
+            color: white; 
+            border: none; 
+            border-radius: 50px; 
+            cursor: pointer; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
+            transition: transform 0.1s; 
+        }
+        #button:hover { transform: scale(1.05); }
+        #button:active { transform: scale(0.95); }
+        #achievements { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            background: rgba(0,0,0,0.8); 
+            color: white; 
+            padding: 15px; 
+            border-radius: 10px; 
+            max-width: 300px; 
+            font-size: 18px; 
+            display: none; 
+            z-index: 999; 
+        }
+    </style>
+</head>
+<body>
+    <div id="count">笨笨: 0</div>
+    <canvas id="canvas" width="400" height="400"></canvas>
+    <button id="button">點擊以獲得永生</button>
+    <div id="achievements"></div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const countEl = document.getElementById('count');
+        const button = document.getElementById('button');
+        const achievementsEl = document.getElementById('achievements');
+
+        let clickCount = 0;
+        let isJumping = false;
+        let jumpHeight = 0;
+        let jumpVelocity = 0;
+        let rotation = 0; // 用來做輕微扭動
+
+        const achievements = {
+            1: "真的喔",
+            50: "這是真的嗎",
+            100: "這不是真的",
+            200: "為什麼",
+            500: "義大利麵",
+            1000: "去碰草",
+            2000: "老兄拜託這只是一個蠢遊戲",
+            3000: "蠢屁股",
+            4000: "這說明了一個關於社會",
+            5000: "你腳臭",
+            6000: "社會恐懼孤狼",
+            7000: "出於某種原因必須在佛萊迪待午夜",
+            8000: "我恨你",
+            9000: "我會在你的屁眼裡灌強力膠",
+            10000: "go find a job"
+        };
+        const unlocked = new Set();
+
+        // 載入圖片
+        const img = new Image();
+        img.src = 'water1.png'; // 圖片檔名
+        let imgLoaded = false;
+
+        img.onload = function() {
+            imgLoaded = true;
+            console.log('圖片載入成功！');
+        };
+
+        // 繪製角色（使用的圖片 + 跳躍 + 輕微扭動）
+        function drawCharacter() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (imgLoaded) {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 3 - 100 + jumpHeight; // 向上跳
+
+                // 計算扭動旋轉（左右輕微搖）
+                rotation = Math.sin(Date.now() / 150) * 0.08; // 幅度很小，大約 ±4.5度
+
+                ctx.save();
+                ctx.translate(centerX, centerY + img.height / 2);
+                ctx.rotate(rotation);
+                ctx.drawImage(img, -img.width / 2, -img.height / 2, img.width, img.height);
+                ctx.restore();
+            } else {
+                // 圖片還沒載入完時顯示文字提示
+                ctx.fillStyle = '#999';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('載入圖片中...', canvas.width/2, canvas.height/2);
+            }
+        }
+
+        // 跳躍動畫
+        function updateJump() {
+            if (isJumping) {
+                jumpVelocity -= 1;
+                jumpHeight += jumpVelocity;
+                if (jumpHeight <= 0) {
+                    jumpHeight = 0;
+                    isJumping = false;
+                }
+            }
+        }
+
+        // 解鎖成就
+        function unlockAchievement(count) {
+            for (let key in achievements) {
+                if (count === parseInt(key) && !unlocked.has(key)) {
+                    unlocked.add(key);
+                    achievementsEl.textContent = `🎉 成就解鎖：${achievements[key]} `;
+                    achievementsEl.style.display = 'block';
+                    setTimeout(() => {
+                        achievementsEl.style.display = 'none';
+                    }, 3000);
+                }
+            }
+        }
+
+        // 點擊事件
+        button.addEventListener('click', () => {
+            clickCount++;
+            countEl.textContent = `跳跳: ${clickCount}`;
+            unlockAchievement(clickCount);
+            isJumping = true;
+            jumpVelocity = 8; // 跳躍初速
+        });
+
+        // 遊戲循環
+        function gameLoop() {
+            updateJump();
+            drawCharacter();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop(); // 啟動遊戲
+    </script>
+</body>
+</html>
